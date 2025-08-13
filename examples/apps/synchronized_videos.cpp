@@ -45,8 +45,8 @@ int main(int argc, char **argv)
         static_cast<uint32_t>(settings.width), 
         static_cast<uint32_t>(settings.height), 
         static_cast<float>(settings.fps),
-        "h264_nvenc"
-        // "libvpx"
+        static_cast<std::string>(settings.codec),
+        static_cast<std::string>(settings.pixel_format)
     };
     std::vector<std::string> video_filenames{GLOBAL_CONST_NCAMS};
     

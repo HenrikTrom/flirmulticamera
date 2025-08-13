@@ -4,14 +4,19 @@
     "properties": {
       "img_width": {"type": "integer"},
       "img_height": {"type": "integer"},
+      "img_offsetX": {"type": "integer"},
+      "img_offsetY": {"type": "integer"},
       "fps": {"type": "number"},
-      "pixel_format": {"type": "string"},
+      "pixel_format": {
+        "enum": ["BayerGB8", "YCbCr422_8_CbYCrY", "RGB8"]
+      },
       "video_mode": {"type": "string"},
       "black_level": {"type": "number"},
       "gain": {"type": "number"},
       "exposure_time": {"type": "number"},
       "binning_vertical": {"type": "integer"},
-      "save_dir": {"type": "string"}
+      "save_dir": {"type": "string"},
+      "codecName": {"type": "string"}
     },
     "required": [
       "img_width", "img_height", "fps", "pixel_format", "video_mode",

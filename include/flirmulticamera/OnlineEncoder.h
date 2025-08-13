@@ -31,6 +31,10 @@ private:
     SwsContext* swsc;
     AVDictionary* muxer_opts;
 
+    //Codec Pixel Formatting
+    AVPixelFormat srcPxlFmt;
+    int bytewidth;
+
     // Count frames and time stuff
     unsigned int frame_in;
     int ptsinterval;
@@ -48,7 +52,7 @@ private:
     bool receive_and_write_packets(void);
 public:
     /// Constructor
-    OnlineEncoder(uint32_t Height, uint32_t Width, float FPS, std::mutex* mutex, std::string codecName = "h264_nvenc");
+    OnlineEncoder(uint32_t Height, uint32_t Width, float FPS, std::mutex* mutex, std::string codecNamet, std::string pxlFormat);
     /// Destructor
     ~OnlineEncoder();
 
@@ -60,7 +64,8 @@ public:
     bool close(void);
     /// Submit a frame for encoding
     bool encode(unsigned char* data, int linesize);
-
+    // 
+    void setAVPixelStuff(std::string pixelFormat);
 };
 
 } // namespace flirmulticamera

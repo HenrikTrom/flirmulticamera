@@ -17,6 +17,8 @@ bool load_camera_settings(const std::string& settings_path, CameraSettings& sett
     );
     settings.height = settings_doc["img_height"].GetInt();
     settings.width = settings_doc["img_width"].GetInt();
+    settings.offsetX = settings_doc["img_offsetX"].GetInt();
+    settings.offsetY = settings_doc["img_offsetY"].GetInt();
     settings.fps = settings_doc["fps"].GetDouble();
     settings.pixel_format = settings_doc["pixel_format"].GetString();
     settings.video_mode = settings_doc["video_mode"].GetString();
@@ -25,10 +27,13 @@ bool load_camera_settings(const std::string& settings_path, CameraSettings& sett
     settings.exposure_time = settings_doc["exposure_time"].GetDouble();
     settings.binning_vertical = settings_doc["binning_vertical"].GetDouble();
     settings.save_dir = settings_doc["save_dir"].GetString();
-    std::string msg = "Camera settings:\n\t- width: {}\n\t- height: {}\n\t- binning_vertical: {}\n\t- pixel_format: {}\n\t- video_mode: {}\n\t- fps: {}\n\t- black_level: {}\n\t- gain: {}\n\t- exposure_time: {}";
+    settings.codec = settings_doc["codecName"].GetString();
+    std::string msg = "Camera settings:\n\t- width: {}\n\t- height: {}\n\t- offsetX: {}\n\t- offsetY: {}\n\t- binning_vertical: {}\n\t- pixel_format: {}\n\t- video_mode: {}\n\t- fps: {}\n\t- black_level: {}\n\t- gain: {}\n\t- exposure_time: {}";
     spdlog::info(msg,
         settings.width, 
         settings.height, 
+        settings.offsetX,
+        settings.offsetY,
         settings.binning_vertical, 
         settings.pixel_format, 
         settings.video_mode, 

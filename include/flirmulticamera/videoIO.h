@@ -24,7 +24,7 @@ private:
     std::queue<Spinnaker::ImagePtr> FIFO;
     bool IsReadyFlag;
 public:
-    FlirVideoWriter(uint32_t Height, uint32_t Width, float FPS, std::mutex* mutex, std::string codecName);
+    FlirVideoWriter(uint32_t Height, uint32_t Width, float FPS, std::mutex* mutex, std::string codecName, std::string pxlFormat);
     ~FlirVideoWriter();
     bool IsReady(void);
     void Open(std::string FileName);
@@ -43,8 +43,9 @@ private:
     uint32_t height;
     float fps;
     std::string codecName;
+    std::string pxlFormat;
 public:
-    VideoWriter(uint32_t width, uint32_t height, float fps, std::string codecName);
+    VideoWriter(uint32_t width, uint32_t height, float fps, std::string codecName, std::string pxlFormat);
     ~VideoWriter();
     void Open(std::vector<std::string> VideoNames);
     void Close(void);

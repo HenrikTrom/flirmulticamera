@@ -6,18 +6,17 @@ set(CMAKE_BUILD_TYPE Release)
 # set(CMAKE_BUILD_TYPE Debug)
 
 link_directories(/usr/local/lib)
+
 if(POLICY CMP0146)
   cmake_policy(SET CMP0146 OLD)
 endif()
-set(OPENCV_VERSION $ENV{OPENCV_VERSION})
-message(STATUS "OpenCV version: ${OPENCV_VERSION}")
+
 find_package(OpenCV ${OPENCV_VERSION} REQUIRED)
 find_package(cpp_utils REQUIRED)
 find_package(pybind11 REQUIRED)
 find_package(fmt REQUIRED)
-message("Python version ${PYTHON_VERSION_MAJOR}.${PYTHON_VERSION_MINOR}")
 
-set(RAPIDJSON_INCLUDE_DIRS "~/libs/rapidjson/include")
+#set(RAPIDJSON_INCLUDE_DIRS "~/libs/rapidjson/include")
 set(SPINNAKER_INCLUDE_DIRS "/opt/spinnaker/include/")
 set(SPINNAKER_LIBRARIES "/opt/spinnaker/lib/libSpinnaker.so")
 
@@ -55,8 +54,8 @@ file(APPEND ${GENERATED_HEADER} "constexpr std::string_view GLOBAL_CONST_MASTER_
 file(APPEND ${GENERATED_HEADER} "constexpr std::string_view GLOBAL_CONST_SLAVE_LINE = \"${SLAVE_LINE}\";\n")
 file(APPEND ${GENERATED_HEADER} "constexpr std::size_t GLOBAL_CONST_NCAMS = ${FLIR_CAMERA_COUNT};\n")
 file(
-  APPEND 
-  ${GENERATED_HEADER} 
+  APPEND
+  ${GENERATED_HEADER}
   "constexpr std::array<std::string_view, ${FLIR_CAMERA_COUNT}> GLOBAL_CONST_CAMERA_SERIAL_NUMBERS = {\n")
 
 foreach(val IN LISTS SERIAL_NUMBERS)
@@ -71,11 +70,14 @@ file(APPEND ${GENERATED_HEADER} "}\n")
 # END: const header cam serial numbers
 ##################################################################################
 
+message(STATUS "cpp_utils include dir: ${cpp_utils_INCLUDE_DIRS}")
+
 set(include_dirs
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
   $<INSTALL_INTERFACE:include>
   ${SPINNAKER_INCLUDE_DIRS}
   ${OpenCV_INCLUDE_DIRS}
+  ${cpp_utils_INCLUDE_DIRS}
   ${AVCODEC_INCLUDE_DIR}
   ${AVFORMAT_INCLUDE_DIR}
   ${AVUTIL_INCLUDE_DIR}
@@ -84,49 +86,29 @@ set(include_dirs
 )
 
 set(libraries
-  ${SPINNAKER_LIBRARIES} 
-  ${OpenCV_LIBS} 
-  ${CMAKE_THREAD_LIBS_INIT} 
+  ${SPINNAKER_LIBRARIES}
+  ${OpenCV_LIBS}
+  ${CMAKE_THREAD_LIBS_INIT}
   -lpthread
-  ${AVCODEC_LIBRARY} 
-  ${AVFORMAT_LIBRARY} 
-  ${AVUTIL_LIBRARY} 
-  ${AVDEVICE_LIBRARY} 
+  ${AVCODEC_LIBRARY}
+  ${AVFORMAT_LIBRARY}
+  ${AVUTIL_LIBRARY}
+  ${AVDEVICE_LIBRARY}
   ${AVSWSCALE_LIBRARY}
   fmt::fmt
-  cpp_utils
+  cpp_utils::cpp_utils
 )
 
 # ============ LIBRARY ============
 add_library(${PROJECT_NAME} STATIC
-  "src/config_parser.cpp" 
-  "src/FlirCamera.cpp" 
+  "src/config_parser.cpp"
+  "src/FlirCamera.cpp"
   "src/OnlineEncoder.cpp"
   "src/videoIO.cpp"
 )
 
 target_link_libraries(${PROJECT_NAME} PUBLIC ${libraries})
 target_include_directories(${PROJECT_NAME} PUBLIC ${include_dirs})
-
-# ============ EXECUTABLES ============
-
-# ## Declare a C++ executable
-aux_source_directory(${PROJ_DIR}/src MAIN_SRC) # add all cpp files
-
-# record synchronized videos
-add_executable(record_synchronized_videos src/apps/synchronized_videos.cpp ${MAIN_SRC})
-target_link_libraries(record_synchronized_videos ${PROJECT_NAME})
-
-# record single synchronized images
-add_executable(record_synchronized_frame src/apps/synchronized_frame.cpp ${MAIN_SRC})
-target_link_libraries(record_synchronized_frame ${PROJECT_NAME})
-
-# ============ BINDINGS ============
-
-add_library(pyflircam MODULE src/bindings.cpp src/fcambindings.cpp src/config_parser.cpp src/FlirCamera.cpp)
-target_link_libraries(pyflircam PRIVATE pybind11::module ${libraries})
-target_include_directories(pyflircam PRIVATE ${include_dirs})
-set_target_properties(pyflircam PROPERTIES PREFIX "" SUFFIX ".so")
 
 # ============ INSTALLATION ============
 install(TARGETS ${PROJECT_NAME}
@@ -171,7 +153,7 @@ install(FILES
 # Installs all header files (*.h) from your include/ folder to: /usr/local/include/${PROJECT_NAME}
 install(DIRECTORY src/ DESTINATION /usr/local/include/${PROJECT_NAME}
   FILES_MATCHING PATTERN "*.hpp" PATTERN "*.h"
-) 
+)
 
 # install python bindings
 execute_process(
@@ -183,3 +165,8 @@ execute_process(
 install(TARGETS pyflircam
   LIBRARY DESTINATION ${PYTHON_SITE_PACKAGES}
 )
+
+# Optionally include examples
+if(EXAMPLES_ENABLED)
+  add_subdirectory(examples)
+endif()

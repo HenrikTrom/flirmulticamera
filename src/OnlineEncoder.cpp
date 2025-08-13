@@ -5,13 +5,11 @@
 #define MAX_MBITRATE 0
 #define MIN_MBITRATE 0
 #define VIDEO_INDEX 0
-#define SRC_PIXFMT AV_PIX_FMT_RGB24
-//#define SRC_PIXFMT AV_PIX_FMT_BAYER_GBRG8
 #define DEST_PIXFMT AV_PIX_FMT_YUV444P 
 
 namespace flirmulticamera {
 
-OnlineEncoder::OnlineEncoder(uint32_t Height, uint32_t Width, float FPS, std::mutex* mutex, std::string codecName)
+OnlineEncoder::OnlineEncoder(uint32_t Height, uint32_t Width, float FPS, std::mutex* mutex, std::string codecName, std::string pxlFormat)
     : frame_in(0), filename("undefined")
 {
     this->is_init = false;
@@ -20,6 +18,7 @@ OnlineEncoder::OnlineEncoder(uint32_t Height, uint32_t Width, float FPS, std::mu
     this->FPS = FPS;
     this->codecName = codecName;
     this->mut = mutex;
+    setAVPixelStuff(pxlFormat);
 }
 
 OnlineEncoder::~OnlineEncoder()
@@ -62,7 +61,6 @@ bool OnlineEncoder::init(void)
         avcc->rc_min_rate = MIN_MBITRATE * 1024 * 1024;
         avcc->rc_max_rate = MAX_MBITRATE * 1024 * 1024;
         avcc->time_base = av_inv_q(input_framerate);
-        // avcc->hwaccel = ff_find_hwaccel(avcc->codec->id, avcc->pix_fmt);
         
         // For some reason, this method is not thread safe -> mutex
         mut->lock();
@@ -89,7 +87,7 @@ bool OnlineEncoder::init(void)
             return false;
         }
 
-        swsc = sws_getContext(this->Width, this->Height, SRC_PIXFMT, this->Width, this->Height, DEST_PIXFMT, 0, NULL, NULL, 0);
+        swsc = sws_getContext(this->Width, this->Height, this->srcPxlFmt, this->Width, this->Height, DEST_PIXFMT, 0, NULL, NULL, 0);
 
         output_packet = av_packet_alloc();
         if(!output_packet){
@@ -215,7 +213,7 @@ bool OnlineEncoder::receive_and_write_packets()
 bool OnlineEncoder::encode(unsigned char* data, int linesize)
 {
     input_frame->data[0] = data;
-    input_frame->linesize[0] = linesize;
+    input_frame->linesize[0] = linesize * bytewidth;
     input_frame->extended_data = &(input_frame->data[0]);
     input_frame->pts = frame_in * ptsinterval;
     frame_in++;
@@ -244,6 +242,25 @@ bool OnlineEncoder::encode(unsigned char* data, int linesize)
     av_packet_unref(output_packet);
 
     return true;
+}
+
+void OnlineEncoder::setAVPixelStuff(std::string pixelFormat){
+    if(pixelFormat == "RGB8"){
+        srcPxlFmt = AV_PIX_FMT_RGB24;
+        bytewidth = 3;
+    }
+    else if(pixelFormat == "YCbCr422_8_CbYCrY"){
+        srcPxlFmt = AV_PIX_FMT_UYVY422;
+        bytewidth = 2;
+    }
+    else if(pixelFormat == "BayerGB8"){
+        srcPxlFmt = AV_PIX_FMT_BAYER_GBRG8;
+        bytewidth = 1;
+    }
+    else if(pixelFormat == "RS2_FORMAT_YUYV"){
+        srcPxlFmt = AV_PIX_FMT_YUYV422;
+        bytewidth = 2;
+    }
 }
 
 } // namespace flirmulticamera

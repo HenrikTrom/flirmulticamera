@@ -28,7 +28,7 @@ If you use this software, please use the GitHub **“Cite this repository”** b
 * `fmt` and `ffmpeg`
 
 1. Download and install the [Spinnaker SDK](https://www.teledynevisionsolutions.com/products/spinnaker-sdk/?model=Spinnaker%20SDK&vertical=machine%20vision&segment=iisflir ). Make sure that you can run Spinview and that you can get a stable video of each camera.
-2. Declare the following environment variables:
+2. Edit the following environment variables in `build_install.sh`:
 
 ```bash
 FLIR_MASTER_LINE #Cable line of Master Output i.e. "Line2"

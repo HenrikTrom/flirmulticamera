@@ -251,10 +251,15 @@ void FlirCameraHandler::ConfigureCommon(CameraPtr pCam, INodeMap &nodeMap)
     // this->CamSettings.
     this->SetEnumerationType(nodeMap, "PixelFormat",  this->CamSettings.pixel_format);
     this->SetEnumerationType(nodeMap, "VideoMode", this->CamSettings.video_mode);
-    this->SetEnumerationType(nodeMap, "BinningControl", "Average");
-    this->SetIntType(nodeMap, "BinningVertical", this->CamSettings.binning_vertical);
+    // Can only access Binning if not in Mode0
+    if (this->CamSettings.video_mode != "Mode0") {
+        this->SetEnumerationType(nodeMap, "BinningControl", "Average");
+        this->SetIntType(nodeMap, "BinningVertical", this->CamSettings.binning_vertical);
+    }
     this->SetIntType(nodeMap, "Width", this->CamSettings.width);
     this->SetIntType(nodeMap, "Height", this->CamSettings.height);
+    this->SetIntType(nodeMap, "OffsetX", this->CamSettings.offsetX);
+    this->SetIntType(nodeMap, "OffsetY", this->CamSettings.offsetY);
 
     this->SetBooleanType(nodeMap, "BlackLevelClampingEnable", true);
     this->SetFloatType(nodeMap, "BlackLevel", this->CamSettings.black_level);
@@ -344,16 +349,17 @@ bool FlirCameraHandler::Configure(void)
             this->ConfigureSlave(nodeMap);
         }
     }
-    for (auto &SN_ordered : this->SNs)
-    {
-        if (SN_ordered == this->TopCamSN)
-        {
-            CameraPtr pCam = this->camList.GetBySerial(SN_ordered);
-            INodeMap &nodeMap = pCam->GetNodeMap();
-            this->SetFloatType(nodeMap, "Gain", this->CamSettings.gain - 2);
-            break;
-        }
-    }
+    // Setting the Gain fix for one camera lower than the others seems problematic
+    // for (auto &SN_ordered : this->SNs)
+    // {
+    //     if (SN_ordered == this->TopCamSN)
+    //     {
+    //         CameraPtr pCam = this->camList.GetBySerial(SN_ordered);
+    //         INodeMap &nodeMap = pCam->GetNodeMap();
+    //         this->SetFloatType(nodeMap, "Gain", this->CamSettings.gain - 2);
+    //         break;
+    //     }
+    // }
     this->StartAcquisition();
     // Crucial sleep, fails otherwise
     std::this_thread::sleep_for(std::chrono::seconds(2));

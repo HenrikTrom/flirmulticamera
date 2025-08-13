@@ -1,7 +1,7 @@
 #pragma once
 
 #include <string>
-#include "cpp_utils/jsontools.h"
+#include <cpp_utils/jsontools.h>
 #include <flirmulticamera/hardware_constants.h>
 #include <spdlog/spdlog.h>
 
@@ -13,6 +13,8 @@ struct CameraSettings
 {
     int width = 0;
     int height = 0;
+    int offsetX = 0;
+    int offsetY = 0;
     int binning_vertical = 0;
     std::string pixel_format = "ErrorNotLoadedPixelFormat";
     std::string video_mode = "ErrorNotLoadedVideoMode";
@@ -21,6 +23,7 @@ struct CameraSettings
     double gain = 0.;
     double exposure_time = 0.;
     std::string save_dir = "";
+    std::string codec = "";
 };
 
 /**
