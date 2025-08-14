@@ -17,7 +17,7 @@ int main(int argc, char **argv)
     }
     else
     {
-        std::string config_file = std::string(CONFIG_DIR)+"/1024x768.json";
+        std::string config_file = std::string(CONFIG_DIR)+"/1024x768_example.json";
         spdlog::info("Loading camera settings from default: {}", config_file);
         load_camera_settings(config_file, settings);
     }
@@ -37,7 +37,7 @@ int main(int argc, char **argv)
     fcamhandler.Start();
     std::this_thread::sleep_for(std::chrono::milliseconds(1));
 
-    std::array<Frame, GLOBAL_CONST_NCAMS> imgs;
+    std::vector<Frame> imgs;
 
     size_t failed_iterations = 0;
     constexpr size_t max_faild_iterations = 1000;
@@ -81,9 +81,10 @@ int main(int argc, char **argv)
             }
             else
             {
+                // TODO: use global settings (option)
                 cv::Mat cvImg(img.frameData->GetHeight(), img.frameData->GetWidth(), CV_8UC3, img.frameData->GetData());
                 cv::cvtColor(cvImg, cvImg, cv::COLOR_RGB2BGR);
-                std::string filename = settings.save_dir+"/"+std::string(GLOBAL_CONST_CAMERA_SERIAL_NUMBERS.at(cidx)) + ".jpg";
+                std::string filename = settings.save_dir+"/"+settings.SNs.at(cidx) + ".jpg";
                 cv::imwrite(filename, cvImg);
                 spdlog::info("Saved image {}", filename);
             }

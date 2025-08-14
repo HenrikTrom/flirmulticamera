@@ -25,7 +25,7 @@ int main(int argc, char **argv)
     else
     {
         spdlog::info("Recording default frames: {}", n_capture_frames);
-        std::string config_file = std::string(CONFIG_DIR)+"/1024x768.json";
+        std::string config_file = std::string(CONFIG_DIR)+"/1024x768_example.json";
         load_camera_settings(config_file, settings);
     }
     if (settings.save_dir == ""){
@@ -52,12 +52,12 @@ int main(int argc, char **argv)
     
     for (int cidx = 0; cidx<GLOBAL_CONST_NCAMS; cidx++)
     {
-        video_filenames.at(cidx) = settings.save_dir+"/"+std::string(GLOBAL_CONST_CAMERA_SERIAL_NUMBERS.at(cidx))+".mp4";
+        video_filenames.at(cidx) = settings.save_dir+"/"+settings.SNs.at(cidx)+".mp4";
         spdlog::info("Opening file name: {}", video_filenames.at(cidx));
     }
     writer.Open(video_filenames);
     
-    std::array<Frame, GLOBAL_CONST_NCAMS> imgs;
+    std::vector<Frame> imgs;
     std::size_t framecounter{1};
     fcamhandler.Start();
     std::this_thread::sleep_for(std::chrono::milliseconds(1));

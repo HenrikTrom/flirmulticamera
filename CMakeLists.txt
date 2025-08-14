@@ -1,9 +1,15 @@
 cmake_minimum_required(VERSION 3.16)
 project(flirmulticamera)
 
+option(BUILD_EXECUTABLES "Build the executables" ON)
+
+option(USE_ENV_DEFINED_CAMERA_COUNT "Use fixed number of cameras which is set as environment variable" OFF)
+
+option(GENERATE_PYTHON_BINDINGS "Generate python bindings" ON)
+
 set(CMAKE_CXX_STANDARD 17)
-set(CMAKE_BUILD_TYPE Release)
-# set(CMAKE_BUILD_TYPE Debug)
+# set(CMAKE_BUILD_TYPE Release)
+set(CMAKE_BUILD_TYPE Debug)
 
 link_directories(/usr/local/lib)
 if(POLICY CMP0146)
@@ -33,43 +39,17 @@ find_path(AVDEVICE_INCLUDE_DIR libavdevice/avdevice.h)
 find_library(AVDEVICE_LIBRARY avdevice)
 find_path(AVSWSCALE_INCLUDE_DIR libswscale/swscale.h)
 find_library(AVSWSCALE_LIBRARY swscale)
-##################################################################################
-# BEGIN: const header cam serial numbers
-##################################################################################
+
+# config header
 set(CONFIG_DIR ${CMAKE_CURRENT_SOURCE_DIR}/cfg)
-set(MASTER_LINE $ENV{FLIR_MASTER_LINE})
-set(SLAVE_LINE $ENV{FLIR_SLAVE_LINE})
-set(FLIR_CAMERA_SERIAL_NUMBERS $ENV{FLIR_CAMERA_SERIAL_NUMBERS})
-set(FLIR_CAMERA_COUNT $ENV{FLIR_CAMERA_COUNT})
-set(FLIR_MASTER_CAM_SERIAL $ENV{FLIR_MASTER_CAM_SERIAL})
-set(FLIR_TOP_CAM_SERIAL $ENV{FLIR_TOP_CAM_SERIAL})
-string(REPLACE "," ";" SERIAL_NUMBERS ${FLIR_CAMERA_SERIAL_NUMBERS})
-
-set(GENERATED_HEADER "${CMAKE_CURRENT_SOURCE_DIR}/include/${PROJECT_NAME}/hardware_constants.h")
-file(WRITE ${GENERATED_HEADER} "// This file is auto-generated. Do not edit.\n")
-file(APPEND ${GENERATED_HEADER} "#pragma once\n\n")
-file(APPEND ${GENERATED_HEADER} "#include <array>\n#include <string_view>\n\n")
-file(APPEND ${GENERATED_HEADER} "namespace ${PROJECT_NAME} {\n\n")
-file(APPEND ${GENERATED_HEADER} "constexpr std::string_view CONFIG_DIR = \"${CONFIG_DIR}\";\n")
-file(APPEND ${GENERATED_HEADER} "constexpr std::string_view GLOBAL_CONST_MASTER_LINE = \"${MASTER_LINE}\";\n")
-file(APPEND ${GENERATED_HEADER} "constexpr std::string_view GLOBAL_CONST_SLAVE_LINE = \"${SLAVE_LINE}\";\n")
-file(APPEND ${GENERATED_HEADER} "constexpr std::size_t GLOBAL_CONST_NCAMS = ${FLIR_CAMERA_COUNT};\n")
-file(
-  APPEND 
-  ${GENERATED_HEADER} 
-  "constexpr std::array<std::string_view, ${FLIR_CAMERA_COUNT}> GLOBAL_CONST_CAMERA_SERIAL_NUMBERS = {\n")
-
-foreach(val IN LISTS SERIAL_NUMBERS)
-    file(APPEND ${GENERATED_HEADER} "    \"${val}\",\n")
-endforeach()
-
-file(APPEND ${GENERATED_HEADER} "};\n")
-file(APPEND ${GENERATED_HEADER} "constexpr std::string_view GLOBAL_CONST_MASTER_CAM_SERIAL = \"${FLIR_MASTER_CAM_SERIAL}\";\n")
-file(APPEND ${GENERATED_HEADER} "constexpr std::string_view GLOBAL_CONST_TOP_CAM_SERIAL = \"${FLIR_TOP_CAM_SERIAL}\";\n")
-file(APPEND ${GENERATED_HEADER} "}\n")
-##################################################################################
-# END: const header cam serial numbers
-##################################################################################
+set(FLIR_CAMERA_COUNT 0) # default value
+if(USE_ENV_DEFINED_CAMERA_COUNT)
+  set(FLIR_CAMERA_COUNT $ENV{FLIR_CAMERA_COUNT})
+endif()
+configure_file(
+  ${CMAKE_CURRENT_SOURCE_DIR}/cmake/config.h.in
+  ${CMAKE_CURRENT_SOURCE_DIR}/include/${PROJECT_NAME}/config.h
+)
 
 set(include_dirs
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
@@ -107,27 +87,29 @@ add_library(${PROJECT_NAME} STATIC
 
 target_link_libraries(${PROJECT_NAME} PUBLIC ${libraries})
 target_include_directories(${PROJECT_NAME} PUBLIC ${include_dirs})
-
+if(USE_ENV_DEFINED_CAMERA_COUNT)
+  target_compile_definitions(${PROJECT_NAME} PUBLIC ENV_DEFINED_CAMERA_COUNT=1)
+endif()
 # ============ EXECUTABLES ============
+if(BUILD_EXECUTABLES)
+  # ## Declare a C++ executable
+  aux_source_directory(${PROJ_DIR}/src MAIN_SRC) # add all cpp files
 
-# ## Declare a C++ executable
-aux_source_directory(${PROJ_DIR}/src MAIN_SRC) # add all cpp files
+  # record synchronized videos
+  add_executable(record_synchronized_videos src/apps/synchronized_videos.cpp ${MAIN_SRC})
+  target_link_libraries(record_synchronized_videos ${PROJECT_NAME})
 
-# record synchronized videos
-add_executable(record_synchronized_videos src/apps/synchronized_videos.cpp ${MAIN_SRC})
-target_link_libraries(record_synchronized_videos ${PROJECT_NAME})
-
-# record single synchronized images
-add_executable(record_synchronized_frame src/apps/synchronized_frame.cpp ${MAIN_SRC})
-target_link_libraries(record_synchronized_frame ${PROJECT_NAME})
-
+  # record single synchronized images
+  add_executable(record_synchronized_frame src/apps/synchronized_frame.cpp ${MAIN_SRC})
+  target_link_libraries(record_synchronized_frame ${PROJECT_NAME})
+endif()
 # ============ BINDINGS ============
-
-add_library(pyflircam MODULE src/bindings.cpp src/fcambindings.cpp src/config_parser.cpp src/FlirCamera.cpp)
-target_link_libraries(pyflircam PRIVATE pybind11::module ${libraries})
-target_include_directories(pyflircam PRIVATE ${include_dirs})
-set_target_properties(pyflircam PROPERTIES PREFIX "" SUFFIX ".so")
-
+if(GENERATE_PYTHON_BINDINGS)
+  add_library(pyflircam MODULE src/bindings.cpp src/fcambindings.cpp src/config_parser.cpp src/FlirCamera.cpp)
+  target_link_libraries(pyflircam PRIVATE pybind11::module ${libraries})
+  target_include_directories(pyflircam PRIVATE ${include_dirs})
+  set_target_properties(pyflircam PROPERTIES PREFIX "" SUFFIX ".so")
+endif()
 # ============ INSTALLATION ============
 install(TARGETS ${PROJECT_NAME}
   EXPORT ${PROJECT_NAME}Targets

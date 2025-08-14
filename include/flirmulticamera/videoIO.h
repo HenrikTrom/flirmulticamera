@@ -7,7 +7,7 @@
 #include <thread>
 #include <queue>
 
-#include "hardware_constants.h"
+#include "flirmulticamera/config.h"
 #include "OnlineEncoder.h"
 #include "Spinnaker.h"
 #include "SpinGenApi/SpinnakerGenApi.h"

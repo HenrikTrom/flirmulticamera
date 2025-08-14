@@ -23,7 +23,7 @@ void FlirCameraWrapper::stop() {
 }
 
 std::vector<cv::Mat> FlirCameraWrapper::get_images() {
-    std::array<flirmulticamera::Frame, GLOBAL_CONST_NCAMS> imgs;
+    std::vector<flirmulticamera::Frame> imgs;
     std::vector<cv::Mat> result;
     while (true){
         if (this->fcamhandler_->Get(imgs)) {

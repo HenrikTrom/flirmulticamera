@@ -33,7 +33,7 @@
             "type": "cppdbg",
             "request": "launch",
             "program": "${workspaceFolder}/build/record_synchronized_videos",
-            "args": ["/home/docker/workspace/build/dependencies/FlirMultiCamera/cfg/1024x768.json"],
+            "args": ["/home/docker/workspace/build/dependencies/FlirMultiCamera/cfg/1024x768_example.json"],
             "stopAtEntry": false,
             "cwd": "${fileDirname}",
             "environment": [],

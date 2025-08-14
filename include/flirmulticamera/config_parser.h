@@ -2,7 +2,7 @@
 
 #include <string>
 #include "cpp_utils/jsontools.h"
-#include <flirmulticamera/hardware_constants.h>
+#include <flirmulticamera/config.h>
 #include <spdlog/spdlog.h>
 
 namespace flirmulticamera {
@@ -11,15 +11,18 @@ constexpr int DOC_BUFFER = 65536;
 
 struct CameraSettings
 {
+    double fps = 0.;
     int width = 0;
     int height = 0;
+    std::string video_mode = "ErrorNotLoadedVideoMode";
     int binning_vertical = 0;
     std::string pixel_format = "ErrorNotLoadedPixelFormat";
-    std::string video_mode = "ErrorNotLoadedVideoMode";
-    double fps = 0.;
-    double black_level = 0.;
-    double gain = 0.;
-    double exposure_time = 0.;
+    std::string master_serial = "ErrorNotLoadedMasterSerial";
+    std::string master_line = "ErrorNotLoadedMasterLine";
+    std::string slave_line = "ErrorNotLoadedSlaveLine";
+    std::vector<std::string> SNs;
+    std::vector<double> black_levels, gains, exposure_times;
+    std::size_t master_cam_idx = 0;
     std::string save_dir = "";
 };
 

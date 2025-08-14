@@ -28,26 +28,22 @@ If you use this software, please use the GitHub **“Cite this repository”** b
 * `fmt` and `ffmpeg`
 
 1. Download and install the [Spinnaker SDK](https://www.teledynevisionsolutions.com/products/spinnaker-sdk/?model=Spinnaker%20SDK&vertical=machine%20vision&segment=iisflir ). Make sure that you can run Spinview and that you can get a stable video of each camera.
-2. Declare the following environment variables:
+
+This repo is used for real time inference. For this purpose there is the option to use a compile time known constant for the amount of used cameras.
+To enable this option use `-DUSE_ENV_DEFINED_CAMERA_COUNT=ON` in cmake and export this environment variable
 
 ```bash
-FLIR_MASTER_LINE #Cable line of Master Output i.e. "Line2"
-FLIR_SLAVE_LINE #Cable line of Slave Input i.e. "Line3"
-FLIR_CAMERA_SERIAL_NUMBERS #Comma separable list of serial numbers, i.e. "19037266,19246521,20174578,19338645,19421325"
 FLIR_CAMERA_COUNT #Number of elements in the list above, i.e. 5
-FLIR_MASTER_CAM_SERIAL #Serial number of the Master camera i.e. "20174578"
-FLIR_TOP_CAM_SERIAL #Serial number of the setups top camera (used to set lower gain)
 ```
 
 ### Installation
 
-Execute the build & installation script:
+You can build and install the python bindings, executables and the libraries by executing this script:
 
 ```bash
 ./build_install.sh
 ```
-
-To install the static library, enter your sudo password when asked.
+Otherwise, feel free to adapt use whatever installation configuration you like.
 
 ### Usage
 

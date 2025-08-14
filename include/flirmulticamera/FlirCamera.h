@@ -11,7 +11,9 @@
 #include "Spinnaker.h"
 #include "SpinGenApi/SpinnakerGenApi.h"
 #include <flirmulticamera/config_parser.h>
-#include <flirmulticamera/hardware_constants.h>
+#include <flirmulticamera/config.h>
+#include <iterator>
+#include <type_traits>
 
 
 namespace flirmulticamera{
@@ -52,9 +54,7 @@ public:
 class FlirCameraHandler
 {
 private:
-    std::array<std::string, GLOBAL_CONST_NCAMS> SNs;
     std::string MasterCamSN;
-    std::string TopCamSN;
     const CameraSettings CamSettings;
     Spinnaker::SystemPtr system;
     Spinnaker::CameraList camList;
@@ -67,7 +67,7 @@ private:
     bool SetFloatType(Spinnaker::GenApi::INodeMap &NodeMap, std::string NodeName, double Val);
     bool SetBooleanType(Spinnaker::GenApi::INodeMap &NodeMap, std::string NodeName, bool Val);
 
-    void ConfigureCommon(Spinnaker::CameraPtr pCam, Spinnaker::GenApi::INodeMap &nodeMap);
+    void ConfigureCommon(Spinnaker::CameraPtr pCam, Spinnaker::GenApi::INodeMap &nodeMap, const std::size_t &idx);
     void ConfigureMaster(Spinnaker::GenApi::INodeMap &nodeMap);
     void ConfigureSlave(Spinnaker::GenApi::INodeMap &nodeMap);
 
@@ -85,8 +85,10 @@ public:
     bool Configure(void);
     void Start(void);
     void Stop(void);
-    // TODO overload/dynamic method
+    #ifdef ENV_DEFINED_CAMERA_COUNT
     bool Get(std::array<Frame, GLOBAL_CONST_NCAMS> &frame);
+    #endif
+    bool Get(std::vector<Frame> &frame);
     bool IsFIFOEmpty(void);
 };
 

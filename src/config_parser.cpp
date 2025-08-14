@@ -4,10 +4,6 @@
 namespace flirmulticamera {
 
 bool load_camera_settings(const std::string& settings_path, CameraSettings& settings) {
-    // TODO: Add checking of env constants on specific build flag
-    // i.e. #IFDEFINE fix_system_camera_size (default on!) 
-    // if (!GLOBAL_CONST_NCAMS == settings.sns.size()){spdlog::error("something something")}
-    // #ENDIF
     spdlog::info("Loading camera settings from {}", settings_path);
     Document settings_doc;
     const bool success = cpp_utils::load_json_with_schema(
@@ -15,28 +11,67 @@ bool load_camera_settings(const std::string& settings_path, CameraSettings& sett
         std::string(CONFIG_DIR)+"/CameraSettings.Schema.json",
         DOC_BUFFER, settings_doc
     );
+    // global settings
+    settings.fps = settings_doc["fps"].GetDouble();
     settings.height = settings_doc["img_height"].GetInt();
     settings.width = settings_doc["img_width"].GetInt();
-    settings.fps = settings_doc["fps"].GetDouble();
-    settings.pixel_format = settings_doc["pixel_format"].GetString();
     settings.video_mode = settings_doc["video_mode"].GetString();
-    settings.black_level = settings_doc["black_level"].GetDouble();
-    settings.gain = settings_doc["gain"].GetDouble();
-    settings.exposure_time = settings_doc["exposure_time"].GetDouble();
     settings.binning_vertical = settings_doc["binning_vertical"].GetDouble();
+    settings.pixel_format = settings_doc["pixel_format"].GetString();
+    settings.master_serial = settings_doc["master_serial"].GetString();
+    settings.master_line = settings_doc["master_line"].GetString();
+    settings.slave_line = settings_doc["slave_line"].GetString();
+    // local settings
+    std::size_t count = 0;
+    std::string SNs_, black_levels_, gains_, exposure_times_;
+    for (const auto &cam : settings_doc["cams"].GetArray()) {
+        std::string serial = cam["serial"].GetString();
+        settings.SNs.push_back(serial);
+        double bl = cam["black_level"].GetDouble();
+        settings.black_levels.push_back(bl);
+        double g = cam["gain"].GetDouble();
+        settings.gains.push_back(g);
+        double et = cam["exposure_time"].GetDouble();
+        settings.exposure_times.push_back(et);
+        if (serial == settings.master_serial) {
+            settings.master_cam_idx = count;
+        }
+        count ++;
+        SNs_ += serial+std::string(" ");
+        black_levels_ += std::to_string(bl)+std::string(" ");
+        gains_ += std::to_string(g)+std::string(" ");
+        exposure_times_ += std::to_string(et)+std::string(" ");
+    }
     settings.save_dir = settings_doc["save_dir"].GetString();
-    std::string msg = "Camera settings:\n\t- width: {}\n\t- height: {}\n\t- binning_vertical: {}\n\t- pixel_format: {}\n\t- video_mode: {}\n\t- fps: {}\n\t- black_level: {}\n\t- gain: {}\n\t- exposure_time: {}";
+
+    // Logging Settings
+    std::string msg = std::string("Camera settings:") +
+        std::string("\n\t- fps: {}\n\t- width: {}\n\t- height: {}\n\t- video_mode: {}") +
+        std::string("\n\t- binning_vertical: {}\n\t- pixel_format: {}") +
+        std::string("\n\t- master_serial: {}\n\t- master_line: {}\n\t- slave_line: {}") +
+        std::string("\n\t- serials: {}\n\t- black_level: {}\n\t- gains: {}\n\t- exposure_time: {}");
     spdlog::info(msg,
+        settings.fps, 
         settings.width, 
         settings.height, 
+        settings.video_mode, 
         settings.binning_vertical, 
         settings.pixel_format, 
-        settings.video_mode, 
-        settings.fps, 
-        settings.black_level, 
-        settings.gain, 
-        settings.exposure_time
-    );    
+        settings.master_serial, 
+        settings.master_line,
+        settings.slave_line, 
+        SNs_, 
+        black_levels_, 
+        gains_, 
+        exposure_times_
+    );
+    #ifdef ENV_DEFINED_CAMERA_COUNT
+    if (GLOBAL_CONST_NCAMS != settings.SNs.size()) {
+        std::string msg = "Environment Variable FLIR_CAMERA_COUNT ({}) != number of cameras set in {}";
+        spdlog::error(msg, GLOBAL_CONST_NCAMS, settings_path);
+        throw std::runtime_error("Settings missmatch");
+    }
+    #endif
     return success;
 }
 

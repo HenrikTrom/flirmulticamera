@@ -131,16 +131,9 @@ void FLirCameraImageEventHandler::Pop(void)
     }
 }
 
-// TODO dynamic
 FlirCameraHandler::FlirCameraHandler(CameraSettings CamSettings) : CamSettings(CamSettings)
 {
-    for (int i = 0; i < GLOBAL_CONST_NCAMS; i++)
-    {
-        this->SNs.at(i) = std::string(GLOBAL_CONST_CAMERA_SERIAL_NUMBERS.at(i));
-    }
-    // TODO
-    this->MasterCamSN = std::string(GLOBAL_CONST_MASTER_CAM_SERIAL);
-    this->TopCamSN = std::string(GLOBAL_CONST_TOP_CAM_SERIAL);
+    this->MasterCamSN = this->CamSettings.SNs.at(this->CamSettings.master_cam_idx);
 }
 
 FlirCameraHandler::~FlirCameraHandler()
@@ -243,12 +236,10 @@ bool FlirCameraHandler::SetBooleanType(INodeMap &NodeMap, std::string NodeName, 
     }
 }
 
-void FlirCameraHandler::ConfigureCommon(CameraPtr pCam, INodeMap &nodeMap)
+void FlirCameraHandler::ConfigureCommon(CameraPtr pCam, INodeMap &nodeMap, const std::size_t &idx)
 {
-    // this->CamSettings.
     this->SetEnumerationType(nodeMap, "UserSetSelector", "UserSet2");
     this->SetCommand(nodeMap, "UserSetLoad");
-    // this->CamSettings.
     this->SetEnumerationType(nodeMap, "PixelFormat",  this->CamSettings.pixel_format);
     this->SetEnumerationType(nodeMap, "VideoMode", this->CamSettings.video_mode);
     this->SetEnumerationType(nodeMap, "BinningControl", "Average");
@@ -257,15 +248,15 @@ void FlirCameraHandler::ConfigureCommon(CameraPtr pCam, INodeMap &nodeMap)
     this->SetIntType(nodeMap, "Height", this->CamSettings.height);
 
     this->SetBooleanType(nodeMap, "BlackLevelClampingEnable", true);
-    this->SetFloatType(nodeMap, "BlackLevel", this->CamSettings.black_level);
+    this->SetFloatType(nodeMap, "BlackLevel", this->CamSettings.black_levels.at(idx));
 
     this->SetEnumerationType(nodeMap, "GainAuto", "Off");
-    this->SetFloatType(nodeMap, "Gain", this->CamSettings.gain);
+    this->SetFloatType(nodeMap, "Gain", this->CamSettings.gains.at(idx));
 
     this->SetEnumerationType(nodeMap, "ExposureMode", "Timed");
     this->SetEnumerationType(nodeMap, "ExposureAuto", "Off");
     this->SetEnumerationType(nodeMap, "BalanceWhiteAuto", "Off");
-    this->SetFloatType(nodeMap, "ExposureTime", this->CamSettings.exposure_time);
+    this->SetFloatType(nodeMap, "ExposureTime", this->CamSettings.exposure_times.at(idx));
 
     this->SetBooleanType(nodeMap, "ChunkModeActive", false);
     // this->SetBooleanType(nodeMap, "ChunkModeActive", true);
@@ -280,7 +271,7 @@ void FlirCameraHandler::ConfigureCommon(CameraPtr pCam, INodeMap &nodeMap)
 void FlirCameraHandler::ConfigureMaster(INodeMap &nodeMap)
 {
     // GPIO& trigger
-    this->SetEnumerationType(nodeMap, "LineSelector", std::string(GLOBAL_CONST_MASTER_LINE));
+    this->SetEnumerationType(nodeMap, "LineSelector", this->CamSettings.master_line);
     this->SetEnumerationType(nodeMap, "LineMode", "Output");
     this->SetEnumerationType(nodeMap, "LineSource", "ExposureActive");
 
@@ -293,12 +284,11 @@ void FlirCameraHandler::ConfigureMaster(INodeMap &nodeMap)
 void FlirCameraHandler::ConfigureSlave(INodeMap &nodeMap)
 {
     // GPIO& trigger
-    this->SetEnumerationType(nodeMap, "LineSelector", std::string(GLOBAL_CONST_SLAVE_LINE));
-    // this->SetEnumerationType(nodeMap, "LineMode", "Input");
+    this->SetEnumerationType(nodeMap, "LineSelector", this->CamSettings.slave_line);
 
     this->SetEnumerationType(nodeMap, "TriggerSelector", "FrameStart");
     this->SetEnumerationType(nodeMap, "TriggerMode", "On");
-    this->SetEnumerationType(nodeMap, "TriggerSource", std::string(GLOBAL_CONST_SLAVE_LINE));
+    this->SetEnumerationType(nodeMap, "TriggerSource", this->CamSettings.slave_line);
     this->SetEnumerationType(nodeMap, "TriggerActivation", "FallingEdge");
     this->SetEnumerationType(nodeMap, "TriggerOverlap", "ReadOut");
 }
@@ -307,18 +297,21 @@ bool FlirCameraHandler::Configure(void)
 {
     this->system = System::GetInstance();
     this->camList = this->system->GetCameras();
-    // TODO Dynamic
-    if (this->camList.GetSize() < GLOBAL_CONST_NCAMS)
+    if (this->camList.GetSize() < this->CamSettings.SNs.size())
     {
         spdlog::error(
             "Number of cameras detected ({}) < Number of cameras configured ({})",
             this->camList.GetSize(),
-            GLOBAL_CONST_NCAMS
+            this->CamSettings.SNs.size()
         );
         return false;
     }
     else{
-        spdlog::info("Detected cameras >= configuration: {}", this->camList.GetSize());
+        spdlog::info(
+            "Detected cameras ({}) >= configuration: ({})", 
+            this->camList.GetSize(),
+            this->CamSettings.SNs.size()
+        );
     }
     if (this->camList.GetSize() == 0)
     {
@@ -326,32 +319,22 @@ bool FlirCameraHandler::Configure(void)
                 << endl;
         return false;
     }
-    for (auto &SN_ordered : this->SNs)
+    for (std::size_t cidx = 0; cidx<this->CamSettings.SNs.size(); cidx++)
     {
-        spdlog::info("Configuring camera {}", SN_ordered);
-        CameraPtr pCam = this->camList.GetBySerial(SN_ordered);
+        spdlog::info("Configuring camera {}", this->CamSettings.SNs.at(cidx));
+        CameraPtr pCam = this->camList.GetBySerial(this->CamSettings.SNs.at(cidx));
         pCam->Init();
         INodeMap &nodeMap = pCam->GetNodeMap();
 
-        this->ConfigureCommon(pCam, nodeMap);
+        this->ConfigureCommon(pCam, nodeMap, cidx);
 
-        if (SN_ordered == this->MasterCamSN)
+        if (this->CamSettings.SNs.at(cidx) == this->MasterCamSN)
         {
             this->ConfigureMaster(nodeMap);
         }
         else
         {
             this->ConfigureSlave(nodeMap);
-        }
-    }
-    for (auto &SN_ordered : this->SNs)
-    {
-        if (SN_ordered == this->TopCamSN)
-        {
-            CameraPtr pCam = this->camList.GetBySerial(SN_ordered);
-            INodeMap &nodeMap = pCam->GetNodeMap();
-            this->SetFloatType(nodeMap, "Gain", this->CamSettings.gain - 2);
-            break;
         }
     }
     this->StartAcquisition();
@@ -363,11 +346,11 @@ bool FlirCameraHandler::Configure(void)
 
 void FlirCameraHandler::StartAcquisition(void)
 {
-    for (auto &SN_ordered : this->SNs)
+    for (auto &SN : this->CamSettings.SNs)
     {
-        CameraPtr pCam = this->camList.GetBySerial(SN_ordered);
+        CameraPtr pCam = this->camList.GetBySerial(SN);
         // start mastercam last
-        if (SN_ordered != this->MasterCamSN)
+        if (SN != this->MasterCamSN)
         {
             pCam->BeginAcquisition();
         }
@@ -406,8 +389,7 @@ void FlirCameraHandler::Stop(void)
     }
 }
 
-// TODO ifdef fix_system_camera_size -> use array, else vector
-// bool FlirCameraHandler::Get(std::vector<Frame> &frame)
+#ifdef ENV_DEFINED_CAMERA_COUNT
 bool FlirCameraHandler::Get(std::array<Frame, GLOBAL_CONST_NCAMS> &frame)
 {
     bool result = true;
@@ -424,10 +406,61 @@ bool FlirCameraHandler::Get(std::array<Frame, GLOBAL_CONST_NCAMS> &frame)
     }
     for (std::size_t i = 0; i<frame.size(); i++)
     {
-        Frame frame_one_cam;
         if (!this->imageEventHandlers.at(i)->Get(frame.at(i)))
         {
             result = false;
+        }
+    }
+
+    if (result)
+    {
+        std::vector<uint64_t> ts_tests{frame.size()};
+        for (std::size_t j = 0; j<this->imageEventHandlers.size(); j++)
+        {
+            uint64_t value = frame.at(j).Timestamp.tv_sec * 1e3 + (frame.at(j).Timestamp.tv_nsec * 1e-6);
+        }
+        uint64_t max = *std::max_element(ts_tests.begin(), ts_tests.end());
+        uint64_t min = *std::min_element(ts_tests.begin(), ts_tests.end());
+
+        // check for 8ms error margin
+        if ((max-min) > 8){
+            std::cout << "Error: max difference in frame: " << (max-min) << "\n";
+        }
+
+        for (auto &img_handler : this->imageEventHandlers)
+        {
+            img_handler->Pop();
+        }
+    }
+
+    return result;
+}
+#endif
+
+bool FlirCameraHandler::Get(std::vector<Frame> &frame)
+{
+    frame.clear();
+    bool result = true;
+
+    // int i = 0;
+    for (auto &img_handler : this->imageEventHandlers)
+    {
+        if (img_handler->IsFIFOEmpty())
+        {
+            // std::cout<<"FIFOEMPTY: "<< i <<std::endl;
+            return false;
+        }
+        // i++;
+    }
+    for (std::size_t i = 0; i<this->imageEventHandlers.size(); i++)
+    {
+        Frame frame_one_cam;
+        if (!this->imageEventHandlers.at(i)->Get(frame_one_cam))
+        {
+            result = false;
+        }
+        else {
+            frame.push_back(frame_one_cam);
         }
     }
 
@@ -470,19 +503,19 @@ bool FlirCameraHandler::IsFIFOEmpty(void)
 void FlirCameraHandler::change_exposure_test()
 {
     static uint16_t i = 0;
-    for (auto &SN_ordered : this->SNs)
+    for (std::size_t cidx = 0; cidx<this->CamSettings.SNs.size(); cidx++)
     {
-        CameraPtr pCam = this->camList.GetBySerial(SN_ordered);
+        CameraPtr pCam = this->camList.GetBySerial(this->CamSettings.SNs.at(cidx));
         INodeMap &nodeMap = pCam->GetNodeMap();
-        this->SetFloatType(nodeMap, "ExposureTime", this->CamSettings.exposure_time + i++ * 100);
+        this->SetFloatType(nodeMap, "ExposureTime", this->CamSettings.exposure_times.at(cidx) + i++ * 100);
     }
 }
 
 void FlirCameraHandler::set_exposure(const int exposure_time)
 {
-    for (auto &SN_ordered : this->SNs)
+    for (auto &SN : this->CamSettings.SNs)
     {
-        CameraPtr pCam = this->camList.GetBySerial(SN_ordered);
+        CameraPtr pCam = this->camList.GetBySerial(SN);
         INodeMap &nodeMap = pCam->GetNodeMap();
         this->SetFloatType(nodeMap, "ExposureTime", exposure_time);
     }
@@ -490,9 +523,9 @@ void FlirCameraHandler::set_exposure(const int exposure_time)
 
 void FlirCameraHandler::set_size(const int width, const int height, const int binningvertival)
 {
-    for (auto &SN_ordered : this->SNs)
+    for (auto &SN : this->CamSettings.SNs)
     {
-        CameraPtr pCam = this->camList.GetBySerial(SN_ordered);
+        CameraPtr pCam = this->camList.GetBySerial(SN);
         INodeMap &nodeMap = pCam->GetNodeMap();
         this->SetFloatType(nodeMap, "Width", width);
         this->SetFloatType(nodeMap, "Height", height);
@@ -502,9 +535,9 @@ void FlirCameraHandler::set_size(const int width, const int height, const int bi
 
 void FlirCameraHandler::set_fps(const int fps)
 {
-    for (auto &SN_ordered : this->SNs)
+    for (auto &SN : this->CamSettings.SNs)
     {
-        CameraPtr pCam = this->camList.GetBySerial(SN_ordered);
+        CameraPtr pCam = this->camList.GetBySerial(SN);
         INodeMap &nodeMap = pCam->GetNodeMap();
         this->SetFloatType(nodeMap, "AcquisitionFrameRate", fps);
     }
