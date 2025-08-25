@@ -92,16 +92,16 @@ if(USE_ENV_DEFINED_CAMERA_COUNT)
 endif()
 # ============ EXECUTABLES ============
 if(BUILD_EXECUTABLES)
-  # ## Declare a C++ executable
-  aux_source_directory(${PROJ_DIR}/src MAIN_SRC) # add all cpp files
-
+  set(APPS_SRC_DIR ${CMAKE_CURRENT_SOURCE_DIR}/apps)
   # record synchronized videos
-  add_executable(record_synchronized_videos src/apps/synchronized_videos.cpp ${MAIN_SRC})
+  add_executable(record_synchronized_videos ${APPS_SRC_DIR}/synchronized_videos.cpp)
   target_link_libraries(record_synchronized_videos ${PROJECT_NAME})
-
   # record single synchronized images
-  add_executable(record_synchronized_frame src/apps/synchronized_frame.cpp ${MAIN_SRC})
+  add_executable(record_synchronized_frame ${APPS_SRC_DIR}/synchronized_frame.cpp)
   target_link_libraries(record_synchronized_frame ${PROJECT_NAME})
+  # stream synchronized videos
+  add_executable(stream_synced_videos ${APPS_SRC_DIR}/stream_synced_videos.cpp)
+target_link_libraries(stream_synced_videos flirmulticamera)
 endif()
 # ============ BINDINGS ============
 if(GENERATE_PYTHON_BINDINGS)

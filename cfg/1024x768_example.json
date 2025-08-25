@@ -14,31 +14,41 @@
             "serial": "19037266",
             "black_level": 8.0,
             "gain": 14.0,
-            "exposure_time": 4000.0
+            "exposure_time": 4000.0,
+            "img_offsetX": 0,
+            "img_offsetY": 0
         },
         {
             "serial": "19246521",
             "black_level": 8.0,
             "gain": 14.0,
-            "exposure_time": 4000.0
+            "exposure_time": 4000.0,
+            "img_offsetX": 0,
+            "img_offsetY": 0
         },
         {
             "serial": "20174578",
             "black_level": 8.0,
             "gain": 14.0,
-            "exposure_time": 4000.0
+            "exposure_time": 4000.0,
+            "img_offsetX": 0,
+            "img_offsetY": 0
         },
         {
             "serial": "19338645",
             "black_level": 8.0,
             "gain": 14.0,
-            "exposure_time": 4000.0
+            "exposure_time": 4000.0,
+            "img_offsetX": 0,
+            "img_offsetY": 0
         },
         {
             "serial": "19421325",
             "black_level": 8.0,
             "gain": 14.0,
-            "exposure_time": 4000.0
+            "exposure_time": 4000.0,
+            "img_offsetX": 0,
+            "img_offsetY": 0
         }
     ]
 }

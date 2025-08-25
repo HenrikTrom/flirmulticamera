@@ -1,42 +1,53 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "FlirMultiCameraConfig",
   "type": "object",
-  "properties": {
-      "fps": { "type": "number" },
-      "img_width": { "type": "integer" },
-      "img_height": { "type": "integer" },
-      "video_mode": { "type": "string" },
-      "binning_vertical": { "type": "integer" },
-      "pixel_format": { "type": "string" },
-      "master_serial": { "type": "string" },
-      "master_line": { "type": "string" },
-      "slave_line": { "type": "string" },
-      "save_dir": { "type": "string" },
-      "cams": {
-          "type": "array",
-          "items": {
-              "type": "object",
-              "properties": {
-                  "serial": { "type": "string" },
-                  "black_level": { "type": "number" },
-                  "gain": { "type": "number" },
-                  "exposure_time": { "type": "number" }
-              },
-              "required": ["serial", "black_level", "gain", "exposure_time"]
-          }
-      }
-  },
   "required": [
-      "fps",
-      "img_width",
-      "img_height",
-      "video_mode",
-      "binning_vertical",
-      "pixel_format",
-      "master_serial",
-      "master_line",
-      "slave_line",
-      "cams",
-      "save_dir"
-  ]
+    "fps",
+    "img_width",
+    "img_height",
+    "video_mode",
+    "binning_vertical",
+    "pixel_format",
+    "master_serial",
+    "master_line",
+    "slave_line",
+    "save_dir",
+    "cams"
+  ],
+  "properties": {
+    "fps": { "type": "number" },
+    "img_width": { "type": "integer" },
+    "img_height": { "type": "integer" },
+    "video_mode": { "type": "string" },
+    "binning_vertical": { "type": "integer" },
+    "pixel_format": { "type": "string" },
+    "master_serial": { "type": "string" },
+    "master_line": { "type": "string" },
+    "slave_line": { "type": "string" },
+    "save_dir": { "type": "string" },
+    "cams": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": [
+          "serial",
+          "black_level",
+          "gain",
+          "exposure_time",
+          "img_offsetX",
+          "img_offsetY"
+        ],
+        "properties": {
+          "serial": { "type": "string" },
+          "black_level": { "type": "number" },
+          "gain": { "type": "number" },
+          "exposure_time": { "type": "number" },
+          "img_offsetX": { "type": "integer" },
+          "img_offsetY": { "type": "integer" }
+        }
+      }
+    }
+  }
 }
