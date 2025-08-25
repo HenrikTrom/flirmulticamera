@@ -249,8 +249,8 @@ void FlirCameraHandler::ConfigureCommon(CameraPtr pCam, INodeMap &nodeMap, const
     }
     this->SetIntType(nodeMap, "Width", this->CamSettings.width);
     this->SetIntType(nodeMap, "Height", this->CamSettings.height);
-    this->SetIntType(nodeMap, "OffsetX", this->CamSettings.offsetX);
-    this->SetIntType(nodeMap, "OffsetY", this->CamSettings.offsetY);
+    this->SetIntType(nodeMap, "OffsetX", this->CamSettings.offsets_x.at(idx));
+    this->SetIntType(nodeMap, "OffsetY", this->CamSettings.offsets_y.at(idx));
 
     this->SetBooleanType(nodeMap, "BlackLevelClampingEnable", true);
     this->SetFloatType(nodeMap, "BlackLevel", this->CamSettings.black_levels.at(idx));

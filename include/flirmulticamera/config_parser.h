@@ -22,6 +22,7 @@ struct CameraSettings
     std::string slave_line = "ErrorNotLoadedSlaveLine";
     std::vector<std::string> SNs;
     std::vector<double> black_levels, gains, exposure_times;
+    std::vector<int> offsets_x, offsets_y;
     std::size_t master_cam_idx = 0;
     std::string save_dir = "";
     std::string codec = "";
