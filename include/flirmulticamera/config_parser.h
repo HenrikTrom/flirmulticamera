@@ -24,6 +24,7 @@ struct CameraSettings
     std::vector<double> black_levels, gains, exposure_times;
     std::size_t master_cam_idx = 0;
     std::string save_dir = "";
+    std::string codec = "";
 };
 
 /**

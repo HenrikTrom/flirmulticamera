@@ -1,6 +1,8 @@
 {
     "img_width": 2048,
     "img_height": 1536,
+    "img_offsetX": 0,
+    "img_offsetY": 0,
     "fps": 2.0,
     "pixel_format": "RGB8",
     "video_mode": "Mode0",

@@ -10,7 +10,7 @@
                 "/usr/local/include/cpp_utils/**",
                 "${workspaceFolder}/include/**",
                 "/usr/local/include/**",
-                "/usr/local/include/opencv4"
+                "/home/simonblaue/Git/opencv4.13/opencv-4.x/include/**"
             ],
             "name": "FlirMultiCamera",
             "intelliSenseMode": "gcc-x64",

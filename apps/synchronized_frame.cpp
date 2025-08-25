@@ -24,6 +24,12 @@ int main(int argc, char **argv)
     if (settings.save_dir == ""){
         settings.save_dir=std::string(CONFIG_DIR)+"/../outputs";
     }
+
+    // Overwrite the passed settings to work with opencv down below
+    settings.pixel_format = "RGB8";
+    // Only one frame -> 1fps
+    settings.fps = 1;
+
     // init camera object
     FlirCameraHandler fcamhandler(
         settings

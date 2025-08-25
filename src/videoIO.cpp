@@ -15,7 +15,7 @@ void FlirVideoWriter::ThreadFunction(void)
         if (!this->FIFO.empty())
         {
             auto &data = this->FIFO.front();
-            this->encoder.encode((unsigned char*)data->GetData(), 3 * data->GetWidth());
+            this->encoder.encode((unsigned char*)data->GetData(), data->GetWidth());
             data->Release();
             this->FIFO.pop();
         }
@@ -23,8 +23,8 @@ void FlirVideoWriter::ThreadFunction(void)
     }
 }
 
-FlirVideoWriter::FlirVideoWriter(uint32_t Height, uint32_t Width, float FPS, std::mutex* mutex, std::string codecName) : 
-encoder(Height, Width, FPS, mutex, codecName)
+FlirVideoWriter::FlirVideoWriter(uint32_t Height, uint32_t Width, float FPS, std::mutex* mutex, std::string codecName, std::string pxlFormat) : 
+encoder(Height, Width, FPS, mutex, codecName, pxlFormat)
 {
     this->ShouldClose = false;
     this->IsReadyFlag = false;
@@ -71,12 +71,13 @@ void FlirVideoWriter::Terminate(void)
 }
 
 // VIDEO WRITER
-VideoWriter::VideoWriter(uint32_t width, uint32_t height, float fps, std::string codecName)
+VideoWriter::VideoWriter(uint32_t width, uint32_t height, float fps, std::string codecName, std::string pxlFormat)
 {
     this->width = width;
     this->height = height;
     this->fps = fps;
     this->codecName = codecName;
+    this->pxlFormat = pxlFormat;
 }
 
 VideoWriter::~VideoWriter()
@@ -89,7 +90,7 @@ void VideoWriter::Open(std::vector<std::string> VideoNames)
     for (std::size_t i = 0; i < GLOBAL_CONST_NCAMS; i++)
     {
         this->writers.at(i).reset(
-            new FlirVideoWriter{this->height, this->width, this->fps, &this->mut, this->codecName}
+            new FlirVideoWriter{this->height, this->width, this->fps, &this->mut, this->codecName, this->pxlFormat}
         );
     }
     bool result{true};

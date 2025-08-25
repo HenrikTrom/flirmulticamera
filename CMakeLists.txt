@@ -12,18 +12,17 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_BUILD_TYPE Debug)
 
 link_directories(/usr/local/lib)
+
 if(POLICY CMP0146)
   cmake_policy(SET CMP0146 OLD)
 endif()
-set(OPENCV_VERSION $ENV{OPENCV_VERSION})
-message(STATUS "OpenCV version: ${OPENCV_VERSION}")
+
 find_package(OpenCV ${OPENCV_VERSION} REQUIRED)
 find_package(cpp_utils REQUIRED)
 find_package(pybind11 REQUIRED)
 find_package(fmt REQUIRED)
-message("Python version ${PYTHON_VERSION_MAJOR}.${PYTHON_VERSION_MINOR}")
 
-set(RAPIDJSON_INCLUDE_DIRS "~/libs/rapidjson/include")
+#set(RAPIDJSON_INCLUDE_DIRS "~/libs/rapidjson/include")
 set(SPINNAKER_INCLUDE_DIRS "/opt/spinnaker/include/")
 set(SPINNAKER_LIBRARIES "/opt/spinnaker/lib/libSpinnaker.so")
 
@@ -56,6 +55,7 @@ set(include_dirs
   $<INSTALL_INTERFACE:include>
   ${SPINNAKER_INCLUDE_DIRS}
   ${OpenCV_INCLUDE_DIRS}
+  ${cpp_utils_INCLUDE_DIRS}
   ${AVCODEC_INCLUDE_DIR}
   ${AVFORMAT_INCLUDE_DIR}
   ${AVUTIL_INCLUDE_DIR}
@@ -64,23 +64,23 @@ set(include_dirs
 )
 
 set(libraries
-  ${SPINNAKER_LIBRARIES} 
-  ${OpenCV_LIBS} 
-  ${CMAKE_THREAD_LIBS_INIT} 
+  ${SPINNAKER_LIBRARIES}
+  ${OpenCV_LIBS}
+  ${CMAKE_THREAD_LIBS_INIT}
   -lpthread
-  ${AVCODEC_LIBRARY} 
-  ${AVFORMAT_LIBRARY} 
-  ${AVUTIL_LIBRARY} 
-  ${AVDEVICE_LIBRARY} 
+  ${AVCODEC_LIBRARY}
+  ${AVFORMAT_LIBRARY}
+  ${AVUTIL_LIBRARY}
+  ${AVDEVICE_LIBRARY}
   ${AVSWSCALE_LIBRARY}
   fmt::fmt
-  cpp_utils
+  cpp_utils::cpp_utils
 )
 
 # ============ LIBRARY ============
 add_library(${PROJECT_NAME} STATIC
-  "src/config_parser.cpp" 
-  "src/FlirCamera.cpp" 
+  "src/config_parser.cpp"
+  "src/FlirCamera.cpp"
   "src/OnlineEncoder.cpp"
   "src/videoIO.cpp"
 )
@@ -153,7 +153,7 @@ install(FILES
 # Installs all header files (*.h) from your include/ folder to: /usr/local/include/${PROJECT_NAME}
 install(DIRECTORY src/ DESTINATION /usr/local/include/${PROJECT_NAME}
   FILES_MATCHING PATTERN "*.hpp" PATTERN "*.h"
-) 
+)
 
 # install python bindings
 execute_process(
@@ -165,3 +165,8 @@ execute_process(
 install(TARGETS pyflircam
   LIBRARY DESTINATION ${PYTHON_SITE_PACKAGES}
 )
+
+# Optionally include examples
+if(EXAMPLES_ENABLED)
+  add_subdirectory(examples)
+endif()
