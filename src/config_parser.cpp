@@ -21,6 +21,7 @@ bool load_camera_settings(const std::string& settings_path, CameraSettings& sett
     settings.master_serial = settings_doc["master_serial"].GetString();
     settings.master_line = settings_doc["master_line"].GetString();
     settings.slave_line = settings_doc["slave_line"].GetString();
+    settings.codec = settings_doc["codec"].GetString();
     // local settings
     std::size_t count = 0;
     std::string SNs_, black_levels_, gains_, exposure_times_, offsets_x_, offsets_y_;

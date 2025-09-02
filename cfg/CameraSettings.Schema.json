@@ -13,6 +13,7 @@
     "master_line",
     "slave_line",
     "save_dir",
+    "codec",
     "cams"
   ],
   "properties": {
@@ -26,6 +27,7 @@
     "master_line": { "type": "string" },
     "slave_line": { "type": "string" },
     "save_dir": { "type": "string" },
+    "codec": { "type": "string" },
     "cams": {
       "type": "array",
       "minItems": 1,

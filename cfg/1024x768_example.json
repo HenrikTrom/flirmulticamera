@@ -9,6 +9,7 @@
     "master_line": "Line2",
     "slave_line": "Line3",
     "save_dir": "/home/docker/workspace/build/dependencies/flirmulticamera/outputs",
+    "codec": "hevc_nvenc",
     "cams": [
         {
             "serial": "19037266",
