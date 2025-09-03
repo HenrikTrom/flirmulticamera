@@ -2,8 +2,9 @@ cmake_minimum_required(VERSION 3.16)
 project(flirmulticamera)
 
 set(CMAKE_CXX_STANDARD 17)
-set(CMAKE_BUILD_TYPE Release)
-# set(CMAKE_BUILD_TYPE Debug)
+#set(CMAKE_BUILD_TYPE Release)
+set(CMAKE_BUILD_TYPE Debug)
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 link_directories(/usr/local/lib)
 
@@ -70,8 +71,6 @@ file(APPEND ${GENERATED_HEADER} "}\n")
 # END: const header cam serial numbers
 ##################################################################################
 
-message(STATUS "cpp_utils include dir: ${cpp_utils_INCLUDE_DIRS}")
-
 set(include_dirs
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
   $<INSTALL_INTERFACE:include>
@@ -109,6 +108,13 @@ add_library(${PROJECT_NAME} STATIC
 
 target_link_libraries(${PROJECT_NAME} PUBLIC ${libraries})
 target_include_directories(${PROJECT_NAME} PUBLIC ${include_dirs})
+
+# ============ BINDINGS ============
+
+add_library(pyflircam MODULE src/bindings.cpp src/fcambindings.cpp src/config_parser.cpp src/FlirCamera.cpp)
+target_link_libraries(pyflircam PRIVATE pybind11::module ${libraries})
+target_include_directories(pyflircam PRIVATE ${include_dirs})
+set_target_properties(pyflircam PROPERTIES PREFIX "" SUFFIX ".so")
 
 # ============ INSTALLATION ============
 install(TARGETS ${PROJECT_NAME}
@@ -153,17 +159,6 @@ install(FILES
 # Installs all header files (*.h) from your include/ folder to: /usr/local/include/${PROJECT_NAME}
 install(DIRECTORY src/ DESTINATION /usr/local/include/${PROJECT_NAME}
   FILES_MATCHING PATTERN "*.hpp" PATTERN "*.h"
-)
-
-# install python bindings
-execute_process(
-  COMMAND python3 -c "import site; print(site.getsitepackages()[0])"
-  OUTPUT_VARIABLE PYTHON_SITE_PACKAGES
-  OUTPUT_STRIP_TRAILING_WHITESPACE
-)
-
-install(TARGETS pyflircam
-  LIBRARY DESTINATION ${PYTHON_SITE_PACKAGES}
 )
 
 # Optionally include examples

@@ -23,9 +23,12 @@ FLirCameraImageEventHandler::FLirCameraImageEventHandler(CameraPtr pCam, double 
     timespec now{};
     clock_gettime(CLOCK_MONOTONIC, &now);
     this->PreviousTimestamp = now;
+    this->imgPreviousTimestamp = 0;
+    pCam->TimestampLatch.Execute();
+    this->offsetTimestamp = pCam->Timestamp.GetValue();
     this->T = T;
-    this->MarginOfError = T;
     this->firstFrameFlag = true;
+    this->pCam = pCam; 
 }
 
 FLirCameraImageEventHandler::~FLirCameraImageEventHandler()
@@ -37,7 +40,6 @@ void FLirCameraImageEventHandler::OnImageEvent(ImagePtr img)
 {
     timespec monotime{};
     clock_gettime(CLOCK_MONOTONIC, &monotime);
-    // std::cout << this->SN << ", " << static_cast<double>(monotime.tv_sec) << ", " << static_cast<double>(monotime.tv_nsec) * 1e-6 << "\n";
     // Check image retrieval status
     if (img->IsIncomplete())
     {
@@ -46,36 +48,32 @@ void FLirCameraImageEventHandler::OnImageEvent(ImagePtr img)
     else
     {
 
-        // std::cout<<this->SN<<" Diff Ptr TS: "<<this->last_ts - img->GetTimeStamp()<< std::endl;
-        this -> last_ts = img->GetTimeStamp();
         if (this->BufferingFlag)
         {
             // convert and push into FIFO
             Frame frame;
             frame.Timestamp = monotime;
-            
+            frame.imgTimestamp = (img->GetChunkData().GetTimestamp() - this->offsetTimestamp);
+
             frame.FrameCounter = this->FrameCounter++;
             // validate the timestamp to see if there is a out of sync
             if (this->firstFrameFlag)
             {
                 this->firstFrameFlag = false;
                 this->PreviousTimestamp = frame.Timestamp;
+                this->imgPreviousTimestamp = (img->GetChunkData().GetTimestamp()  - this->offsetTimestamp);
             }
             else
             {
-                double ts = static_cast<double>(frame.Timestamp.tv_sec) +static_cast<double>(frame.Timestamp.tv_nsec) * 1e-9;
-                double previous = static_cast<double>(this->PreviousTimestamp.tv_sec) +static_cast<double>(this->PreviousTimestamp.tv_nsec) * 1e-9;
-                // ts timstamp from system
-                // previous timestamp
-                // T 1/framerate
-                if(abs(ts - previous - this->T) > this->MarginOfError)
+                // T  = 1/framerate
+                const double errorMargin = this->T * 0.2;
+		        double timediff =  (frame.imgTimestamp - this->imgPreviousTimestamp) * 1e-9 - this->T;
+                if (timediff > errorMargin)
                 {
-                    std::string msg = "Error::FlirCamera.cpp::Frame out of sync; FNo,SN: " + 
-                    std::to_string(frame.FrameCounter)+ ", " + this->SN + ", ";
-                    + "Difference:" + std::to_string(abs(ts - previous));
-                    spdlog::error(msg);
+                    spdlog::warn("Missed a frame; FNo,SN,imTs: {} | {} | {} ms", frame.FrameCounter, this->SN, timediff*1e3);
                 }
                 this->PreviousTimestamp = frame.Timestamp;
+                this->imgPreviousTimestamp = frame.imgTimestamp;
             }
             frame.frameData = img;
             this->FIFO.push(frame);
@@ -111,6 +109,7 @@ void FLirCameraImageEventHandler::Start(void)
     clock_gettime(CLOCK_MONOTONIC, &now);
     this->FrameCounter = 0;
     this->PreviousTimestamp = now;
+    this->imgPreviousTimestamp = (this->pCam->Timestamp.GetValue() - this->offsetTimestamp);
     this->BufferingFlag = true;
 }
 
@@ -129,6 +128,10 @@ void FLirCameraImageEventHandler::Pop(void)
     {
         this->FIFO.pop();
     }
+}
+
+void FLirCameraImageEventHandler::setOffset(int64_t offset){
+    this->offsetTimestamp = offset;
 }
 
 // TODO dynamic
@@ -256,10 +259,10 @@ void FlirCameraHandler::ConfigureCommon(CameraPtr pCam, INodeMap &nodeMap)
         this->SetEnumerationType(nodeMap, "BinningControl", "Average");
         this->SetIntType(nodeMap, "BinningVertical", this->CamSettings.binning_vertical);
     }
-    this->SetIntType(nodeMap, "Width", this->CamSettings.width);
-    this->SetIntType(nodeMap, "Height", this->CamSettings.height);
     this->SetIntType(nodeMap, "OffsetX", this->CamSettings.offsetX);
     this->SetIntType(nodeMap, "OffsetY", this->CamSettings.offsetY);
+    this->SetIntType(nodeMap, "Width", this->CamSettings.width);
+    this->SetIntType(nodeMap, "Height", this->CamSettings.height);
 
     this->SetBooleanType(nodeMap, "BlackLevelClampingEnable", true);
     this->SetFloatType(nodeMap, "BlackLevel", this->CamSettings.black_level);
@@ -272,14 +275,17 @@ void FlirCameraHandler::ConfigureCommon(CameraPtr pCam, INodeMap &nodeMap)
     this->SetEnumerationType(nodeMap, "BalanceWhiteAuto", "Off");
     this->SetFloatType(nodeMap, "ExposureTime", this->CamSettings.exposure_time);
 
-    this->SetBooleanType(nodeMap, "ChunkModeActive", false);
-    // this->SetBooleanType(nodeMap, "ChunkModeActive", true);
-    // this->SetEnumerationType(nodeMap, "ChunkSelector", "Timestamp");
-    // this->SetBooleanType(nodeMap, "ChunkEnable", true);
+    //this->SetBooleanType(nodeMap, "ChunkModeActive", false);
+    this->SetBooleanType(nodeMap, "ChunkModeActive", true);
+    this->SetEnumerationType(nodeMap, "ChunkSelector", "Timestamp");
+    this->SetBooleanType(nodeMap, "ChunkEnable", true);
 
     FLirCameraImageEventHandler *imgEventHandlerTmp = new FLirCameraImageEventHandler{pCam, 1.0 / this->CamSettings.fps};
     this->imageEventHandlers.push_back(imgEventHandlerTmp);
     pCam->RegisterEventHandler(*this->imageEventHandlers[this->imageEventHandlers.size() - 1]);
+
+    // this->SetCommand(nodeMap, "TimestampLatch");
+
 }
 
 void FlirCameraHandler::ConfigureMaster(INodeMap &nodeMap)
@@ -349,37 +355,23 @@ bool FlirCameraHandler::Configure(void)
             this->ConfigureSlave(nodeMap);
         }
     }
-    // Setting the Gain fix for one camera lower than the others seems problematic
-    // for (auto &SN_ordered : this->SNs)
-    // {
-    //     if (SN_ordered == this->TopCamSN)
-    //     {
-    //         CameraPtr pCam = this->camList.GetBySerial(SN_ordered);
-    //         INodeMap &nodeMap = pCam->GetNodeMap();
-    //         this->SetFloatType(nodeMap, "Gain", this->CamSettings.gain - 2);
-    //         break;
-    //     }
-    // }
     this->StartAcquisition();
     // Crucial sleep, fails otherwise
-    std::this_thread::sleep_for(std::chrono::seconds(2));
+    //std::this_thread::sleep_for(std::chrono::seconds(2));
     spdlog::info("Starting Camera Acquisition");
     return true;
 }
 
 void FlirCameraHandler::StartAcquisition(void)
 {
-    for (auto &SN_ordered : this->SNs)
+    for (auto &imgHandler : this->imageEventHandlers)
     {
-        CameraPtr pCam = this->camList.GetBySerial(SN_ordered);
-        // start mastercam last
-        if (SN_ordered != this->MasterCamSN)
-        {
+        auto sn = imgHandler->SN;
+        CameraPtr pCam = this->camList.GetBySerial(sn);
             pCam->BeginAcquisition();
-        }
+            pCam->TimestampLatch.Execute();
+            imgHandler->setOffset(pCam->Timestamp.GetValue());
     }
-    CameraPtr pCam = this->camList.GetBySerial(this->MasterCamSN);
-    pCam->BeginAcquisition();
 }
 
 void FlirCameraHandler::StopAcquisition(void)
@@ -417,17 +409,18 @@ void FlirCameraHandler::Stop(void)
 bool FlirCameraHandler::Get(std::array<Frame, GLOBAL_CONST_NCAMS> &frame)
 {
     bool result = true;
+    bool detectedDroped = false;
 
-    // int i = 0;
+    // If any Camera has no images at the moment return
     for (auto &img_handler : this->imageEventHandlers)
     {
         if (img_handler->IsFIFOEmpty())
         {
-            // std::cout<<"FIFOEMPTY: "<< i <<std::endl;
             return false;
         }
-        // i++;
     }
+
+    // Dont know, seems to do the same as above?
     for (std::size_t i = 0; i<frame.size(); i++)
     {
         Frame frame_one_cam;
@@ -437,20 +430,49 @@ bool FlirCameraHandler::Get(std::array<Frame, GLOBAL_CONST_NCAMS> &frame)
         }
     }
 
+    // Sync camera streams, if unsynced drop frames for the cam with older timestamps to get back to the one with a frame drop.
+    // do not return any images if we detected a frame drop
+    // We need to do this with camera timestamps as the system timestamps vary between cams due to usb bus
     if (result)
     {
-        std::vector<uint64_t> ts_tests{frame.size()};
+        // find the newest timestamp
+        std::array<double, GLOBAL_CONST_NCAMS> ts_tests;
         for (std::size_t j = 0; j<this->imageEventHandlers.size(); j++)
         {
-            uint64_t value = frame.at(j).Timestamp.tv_sec * 1e3 + (frame.at(j).Timestamp.tv_nsec * 1e-6);
+            int64_t ti = frame.at(j).imgTimestamp; 
+	        ts_tests[j] = ti;
         }
-        uint64_t max = *std::max_element(ts_tests.begin(), ts_tests.end());
-        uint64_t min = *std::min_element(ts_tests.begin(), ts_tests.end());
+	
+        uint64_t tmax = *std::max_element(ts_tests.begin(), ts_tests.end());
 
-        // check for 8ms error margin
-        if ((max-min) > 8){
-            std::cout << "Error: max difference in frame: " << (max-min) << "\n";
+        // check for 20% drift against the desired framerate
+        uint64_t error_margin = 1/this->CamSettings.fps * 1e9 * 3 / 10;
+
+        // drop a frame to align cams to newest timestamp
+        for (std::size_t j = 0; j<this->imageEventHandlers.size(); j++){
+            int64_t ti = frame.at(j).imgTimestamp; 
+            if ((tmax-ti) > error_margin){
+                size_t num2drop = ceil( (double) (tmax - ti) / (1/this->CamSettings.fps *1e9));
+                spdlog::warn("Out of sync:  Difference against newest for {} : {} - {} = {} ({}), {} drop {}", 
+                    this->imageEventHandlers.at(j)->SN ,
+                    tmax*1e-6, 
+                    ti*1e-6, 
+                    (tmax-ti)*1e-6, 
+                    error_margin*1e-6, 
+                    (double) (tmax - ti) / (1/this->CamSettings.fps *1e9), 
+                    num2drop);
+
+                for(size_t k=0; k<num2drop; k++){
+                    this->imageEventHandlers.at(j)->Pop();
+                }
+                detectedDroped = true;
+            }
         }
+        
+        if (detectedDroped) {
+            return false;
+        }
+
 
         for (auto &img_handler : this->imageEventHandlers)
         {

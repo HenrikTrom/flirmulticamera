@@ -1,22 +1,18 @@
 {
     "configurations": [
         {
-            "browse": {
-                "databaseFilename": "${default}",
-                "limitSymbolsToIncludedHeaders": false
-            },
+            "name": "Linux",
             "includePath": [
-                "/opt/spinnaker/include/**",
-                "/usr/local/include/cpp_utils/**",
-                "${workspaceFolder}/include/**",
-                "/usr/local/include/**",
-                "/home/simonblaue/Git/opencv4.13/opencv-4.x/include/**"
+                "${default}"
             ],
-            "name": "FlirMultiCamera",
-            "intelliSenseMode": "gcc-x64",
+            "defines": [],
             "compilerPath": "/usr/bin/gcc",
-            "cStandard": "gnu11",
-            "cppStandard": "c++17"
+            "cStandard": "c17",
+            "cppStandard": "gnu++17",
+            "intelliSenseMode": "linux-gcc-x64",
+            "compileCommands": [
+                "${workspaceFolder}/build/compile_commands.json"
+            ]
         }
     ],
     "version": 4

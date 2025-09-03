@@ -29,3 +29,15 @@ target_link_libraries(record_synchronized_videos flirmulticamera)
 
 add_executable(record_synchronized_frame ${EXAMPLE_SRC_DIR}/synchronized_frame.cpp)
 target_link_libraries(record_synchronized_frame flirmulticamera)
+
+
+# install python bindings
+execute_process(
+  COMMAND python3 -c "import site; print(site.getsitepackages()[0])"
+  OUTPUT_VARIABLE PYTHON_SITE_PACKAGES
+  OUTPUT_STRIP_TRAILING_WHITESPACE
+)
+
+install(TARGETS pyflircam
+  LIBRARY DESTINATION ${PYTHON_SITE_PACKAGES}
+)

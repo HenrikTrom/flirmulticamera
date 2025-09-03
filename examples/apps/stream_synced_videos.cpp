@@ -61,14 +61,8 @@ int main(int argc, char **argv)
 
     fcamhandler.Start();
     std::this_thread::sleep_for(std::chrono::milliseconds(1));
-    // Setting up terminal for stoping recording
-
 
     spdlog::info("Hit 'q' to stop streaming.");
-    // size_t i = 0;
-    // size_t n_capture_frames = 500;
-    // cpp_utils::ProgressBar progress_bar(n_capture_frames);
-    // while (i < n_capture_frames){
     while (cv::waitKey(1) != 113) {
        
 
@@ -80,8 +74,26 @@ int main(int argc, char **argv)
             for (int cidx = 0; cidx<GLOBAL_CONST_NCAMS; cidx++)
             {
                 auto frame = imgs.at(cidx);
-                cv::Mat cvImg(frame.frameData->GetHeight(), frame.frameData->GetWidth(), CV_8UC3, frame.frameData->GetData());
-                cv::cvtColor(cvImg, cvImg, cv::COLOR_RGB2BGR);
+                cv::Mat cvImg;
+                if (settings.pixel_format == "RGB8"){
+                    cvImg = cv::Mat(frame.frameData->GetHeight(), frame.frameData->GetWidth(), CV_8UC3, frame.frameData->GetData());
+                    cv::cvtColor(cvImg, cvImg, cv::COLOR_RGB2BGR);
+                }
+                else if (settings.pixel_format == "BayerGB8")
+                {
+                    cvImg = cv::Mat(frame.frameData->GetHeight(), frame.frameData->GetWidth(), CV_8UC1, frame.frameData->GetData());
+                    cv::cvtColor(cvImg, cvImg, cv::COLOR_BayerGB2RGB);
+                }
+                // else if (settings.pixel_format == "YCbCr422_8_CbYCrY"){
+                //     cvImg = cv::Mat(frame.frameData->GetHeight(), frame.frameData->GetWidth(), CV_8UC3, frame.frameData->GetData());
+                //     cv::cvtColor(cvImg, cvImg, cv::COLOR_YCrCb2BGR);
+                // }
+                else {
+                    spdlog::error("No conversion defined for this pixel format.");
+                    exit(EXIT_FAILURE);
+                }
+                
+    
                 cv::imshow(windowNames.at(cidx), cvImg);
             }
             
@@ -92,6 +104,7 @@ int main(int argc, char **argv)
 
     fcamhandler.Stop();
 
+    spdlog::info("Goodbye");
     cv::destroyAllWindows();
     return 0;
 
