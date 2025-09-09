@@ -9,7 +9,8 @@
 
 namespace flirmulticamera {
 
-OnlineEncoder::OnlineEncoder(uint32_t Height, uint32_t Width, float FPS, std::mutex* mutex, std::string codecName, std::string pxlFormat)
+OnlineEncoder::OnlineEncoder(
+    uint32_t Height, uint32_t Width, float FPS, std::mutex* mutex, std::string codecName, std::string pxlFormat)
     : frame_in(0), filename("undefined")
 {
     this->is_init = false;

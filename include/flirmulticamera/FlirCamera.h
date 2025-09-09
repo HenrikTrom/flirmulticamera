@@ -23,6 +23,7 @@ struct Frame
 {
     Spinnaker::ImagePtr frameData;
     timespec Timestamp;
+    int64_t imgTimestamp; // already in system time
     uint64_t FrameCounter;
 };
 
@@ -34,10 +35,13 @@ private:
     std::queue<Frame> FIFO;
     double MarginOfError;
     double T;
-    timespec PreviousTimestamp;
-    bool firstFrameFlag;
-    std::atomic<bool> BufferingFlag;
-    uint64_t last_ts;
+    // timespec PreviousTimestamp;
+    int64_t imgPreviousTimestamp; // detect dropping
+    int64_t offsetTimestamp;
+    bool firstFrameFlag; //is it the first frame
+    std::atomic<bool> BufferingFlag; // start/stop buffering
+    uint64_t last_ts; // timestamp of last image
+    Spinnaker::CameraPtr pCam;
     // FIFO
 public:
     std::string SN;
@@ -49,6 +53,7 @@ public:
     void Start(void);
     void Stop(void);
     void Pop(void);
+    void setOffset();
 };
 
 class FlirCameraHandler
