@@ -65,7 +65,7 @@ public:
     /// Submit a frame for encoding
     bool encode(unsigned char* data, int linesize);
     // 
-    void setAVPixelStuff(std::string pixelFormat);
+    void setAVPixelStuff(std::string sourcePixelFormat);
 };
 
 } // namespace flirmulticamera

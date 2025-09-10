@@ -245,20 +245,24 @@ bool OnlineEncoder::encode(unsigned char* data, int linesize)
     return true;
 }
 
-void OnlineEncoder::setAVPixelStuff(std::string pixelFormat){
-    if(pixelFormat == "RGB8"){
+void OnlineEncoder::setAVPixelStuff(std::string sourcePixelFormat){
+    if(sourcePixelFormat == "RGB8"){
         srcPxlFmt = AV_PIX_FMT_RGB24;
         bytewidth = 3;
     }
-    else if(pixelFormat == "YCbCr422_8_CbYCrY"){
+    else if(sourcePixelFormat == "BGR8"){
+        srcPxlFmt = AV_PIX_FMT_BGR24;
+        bytewidth = 3;
+    }
+    else if(sourcePixelFormat == "YCbCr422_8_CbYCrY"){
         srcPxlFmt = AV_PIX_FMT_UYVY422;
         bytewidth = 2;
     }
-    else if(pixelFormat == "BayerGB8"){
+    else if(sourcePixelFormat == "BayerGB8"){
         srcPxlFmt = AV_PIX_FMT_BAYER_GBRG8;
         bytewidth = 1;
     }
-    else if(pixelFormat == "RS2_FORMAT_YUYV"){
+    else if(sourcePixelFormat == "RS2_FORMAT_YUYV"){
         srcPxlFmt = AV_PIX_FMT_YUYV422;
         bytewidth = 2;
     }
