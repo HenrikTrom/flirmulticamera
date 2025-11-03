@@ -7,7 +7,7 @@ bool load_camera_settings(const std::string& settings_path, CameraSettings& sett
     spdlog::info("Loading camera settings from {}", settings_path);
     Document settings_doc;
     const bool success = cpp_utils::load_json_with_schema(
-        settings_path, 
+        settings_path,
         std::string(CONFIG_DIR)+"/CameraSettings.Schema.json",
         DOC_BUFFER, settings_doc
     );
@@ -73,7 +73,7 @@ bool load_camera_settings(const std::string& settings_path, CameraSettings& sett
         gains_, 
         exposure_times_,
         offsets_x_,
-        offsets_x_
+        offsets_y_
     );
     // set master cam idx
     for (std::size_t cidx = 0; cidx<settings.SNs.size(); cidx++) {
