@@ -7,6 +7,14 @@ using namespace flirmulticamera;
 
 int main(int argc, char **argv)
 {
+    #ifdef NDEBUG
+        spdlog::set_level(spdlog::level::info); // Set to info for Release builds
+        spdlog::info("Release build");
+    #else
+        spdlog::set_level(spdlog::level::debug); // Set to debug for Debug builds
+        spdlog::debug("Debug build");
+    #endif
+
     // load camera settings
     CameraSettings settings;
     if (argc == 2 )

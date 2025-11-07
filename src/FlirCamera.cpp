@@ -311,6 +311,35 @@ bool FlirCameraHandler::Configure(void)
             this->camList.GetSize(),
             this->CamSettings.SNs.size()
         );
+        std::string availiable_sns, missing_sns;
+        for (const std::string &_snc : this->CamSettings.SNs) {
+            bool is_configured = false;
+            for (std::size_t cidx = 0; cidx<this->camList.GetSize(); cidx++) {
+                CameraPtr pCam = this->camList.GetByIndex(cidx);
+                INodeMap& nodemapTL = pCam->GetTLDeviceNodeMap();
+                CStringPtr serialNode = nodemapTL.GetNode("DeviceSerialNumber");
+                if (IsAvailable(serialNode) && IsReadable(serialNode)) 
+                {
+                    std::string _sn = std::string(serialNode->GetValue().c_str());
+                    if (_snc == _sn) 
+                    {
+                        availiable_sns += _sn + " ";
+                        is_configured = true;
+                    }
+                }
+                else
+                {
+                    std::cout << "DeviceSerialNumber node not available/readable\n";
+                }
+            }
+            if (!is_configured) 
+            {
+                missing_sns += _snc + " ";
+            }
+        }
+        spdlog::info("Availiable devices: {}", availiable_sns);
+        spdlog::info("Undetected devices: {}", missing_sns);
+        
         return false;
     }
     else{
@@ -461,16 +490,37 @@ bool FlirCameraHandler::Get(std::vector<Frame> &frame)
     bool detectedDroped = false;
 
     // Make sure all cams have at least one image
-    for (std::size_t i = 0; i<this->imageEventHandlers.size(); i++)
-    {
-        Frame frame_one_cam;
-        if (!this->imageEventHandlers.at(i)->Get(frame_one_cam)) {
-            return false;
+
+    #ifdef NDEBUG
+        for (std::size_t i = 0; i<this->imageEventHandlers.size(); i++)
+        {
+            Frame frame_one_cam;
+            if (!this->imageEventHandlers.at(i)->Get(frame_one_cam)) {
+                return false;
+            }
+            else {
+                frame.push_back(frame_one_cam);
+            }
         }
-        else {
-            frame.push_back(frame_one_cam);
+    #else
+        spdlog::set_level(spdlog::level::debug); // Set to debug for Debug builds
+        bool got_image = true;
+        for (std::size_t i = 0; i<this->imageEventHandlers.size(); i++)
+        {
+            Frame frame_one_cam;
+            auto sn = this->imageEventHandlers.at(i)->SN;
+            if (!this->imageEventHandlers.at(i)->Get(frame_one_cam)) {
+                spdlog::debug("{} - No image", sn);
+                got_image = false;
+            }
+            else {
+                spdlog::debug("{} - Got image", sn);
+                frame.push_back(frame_one_cam);
+            }
         }
-    }
+        std::cout << "\n" << std::endl;
+        if (!got_image){return false;};
+    #endif
 
     // Sync camera streams, if unsynced drop frames for the cam with older timestamps to get back to the one with a frame drop.
     // do not return any images if we detected a frame drop

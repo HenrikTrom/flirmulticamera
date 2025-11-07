@@ -1,18 +1,18 @@
 {
-    "fps": 40.0,
+    "fps": 20.0,
     "img_width": 1024,
     "img_height": 768,
     "video_mode": "Mode1",
     "binning_vertical": 2,
     "pixel_format": "RGB8",
-    "master_serial": "20174578",
-    "master_line": "Line2",
+    "master_serial": "24212320",
+    "master_line": "Line3",
     "slave_line": "Line3",
     "save_dir": "/home/docker/workspace/build/dependencies/flirmulticamera/outputs",
     "codec": "hevc_nvenc",
     "cams": [
         {
-            "serial": "19037266",
+            "serial": "24164659",
             "black_level": 8.0,
             "gain": 14.0,
             "exposure_time": 4000.0,
@@ -20,7 +20,7 @@
             "img_offsetY": 0
         },
         {
-            "serial": "19246521",
+            "serial": "24164660",
             "black_level": 8.0,
             "gain": 14.0,
             "exposure_time": 4000.0,
@@ -28,7 +28,7 @@
             "img_offsetY": 0
         },
         {
-            "serial": "20174578",
+            "serial": "24164658",
             "black_level": 8.0,
             "gain": 14.0,
             "exposure_time": 4000.0,
@@ -36,7 +36,7 @@
             "img_offsetY": 0
         },
         {
-            "serial": "19338645",
+            "serial": "24212320",
             "black_level": 8.0,
             "gain": 14.0,
             "exposure_time": 4000.0,
@@ -44,7 +44,7 @@
             "img_offsetY": 0
         },
         {
-            "serial": "19421325",
+            "serial": "24164661",
             "black_level": 8.0,
             "gain": 14.0,
             "exposure_time": 4000.0,
